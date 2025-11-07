@@ -1,59 +1,30 @@
-#!/usr/bin/env python3
-import sys
 import subprocess
 import google.generativeai as genai
-from utils import load_config
+import yaml
 
+def load_config():
+    with open("config.yaml", "r") as f:
+        return yaml.safe_load(f)
 
-def get_staged_diff() -> str:
-    """Ambil perubahan file yang sudah di-staged."""
-    diff = subprocess.getoutput("git diff --staged")
-    if not diff.strip():
-        print("⚠️  Tidak ada perubahan yang di-staged.")
-        sys.exit(0)
-    return diff
+def get_staged_changes():
+    result = subprocess.run(["git", "diff", "--cached"], capture_output=True, text=True)
+    return result.stdout.strip()
 
-
-def generate_commit_message(diff: str) -> str:
-    """Kirim diff ke Gemini dan dapatkan commit message."""
+def generate_commit_message(changes):
     config = load_config()
     genai.configure(api_key=config["gemini_api_key"])
     model = genai.GenerativeModel(config.get("model", "gemini-1.5-flash"))
 
-    prompt = f"""
-    You are a helpful assistant that writes concise Git commit messages.
-    Follow Conventional Commits style (feat:, fix:, chore:, refactor:, docs:, test:).
-    Based on the diff below, write a clear and meaningful commit message.
+    prompt = f"Generate a short, conventional commit message for these git changes:\n\n{changes}"
+    response = model.generate_content(prompt)
+    return response.text.strip()
 
-    Git diff:
-    {diff}
-    """
-
-    try:
-        response = model.generate_content(prompt)
-        return response.text.strip()
-    except Exception as e:
-        print(f"❌ Gagal generate pesan: {e}")
-        sys.exit(1)
-
-
-def confirm_and_commit(message: str):
-    """Tampilkan pesan commit dan minta konfirmasi user."""
-    print("\n✨ Pesan commit yang dihasilkan AI:")
-    print("----------------------------------")
+def main():
+    changes = get_staged_changes()
+    if not changes:
+        exit(1)
+    message = generate_commit_message(changes)
     print(message)
-    print("----------------------------------")
-    confirm = input("Gunakan pesan ini? (y/n): ").lower()
-
-    if confirm == "y":
-        subprocess.run(["git", "commit", "-m", message])
-        print("✅ Commit berhasil!")
-    else:
-        print("❌ Commit dibatalkan.")
-        sys.exit(1)
-
 
 if __name__ == "__main__":
-    diff = get_staged_diff()
-    message = generate_commit_message(diff)
-    confirm_and_commit(message)
+    main()
