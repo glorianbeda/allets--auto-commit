@@ -82,6 +82,20 @@ if [ "$CONFIRM" = "y" ] || [ "$CONFIRM" = "Y" ] || [ -z "$CONFIRM" ]; then
   exit 1
 else
   echo "❌ Pesan AI dibatalkan. Silakan tulis pesan manual di editor."
+
+  # Cek apakah editor Git sudah dikonfigurasi untuk mencegah error
+  GIT_EDITOR=$(git config core.editor)
+  if [ -z "$GIT_EDITOR" ]; then
+    echo ""
+    echo "⚠️  Peringatan: Editor Git default tidak ditemukan."
+    echo "    Untuk dapat menulis pesan manual, jalankan perintah berikut:"
+    echo "    git config --global core.editor nano"
+    echo "    (Ganti 'nano' dengan editor favorit Anda seperti 'vim' atau 'code --wait')"
+    echo ""
+    echo "    Commit dibatalkan."
+    exit 1 # Batalkan commit untuk menghindari error dari Git
+  fi
+
   # Keluar dengan 0 agar editor tetap terbuka untuk input manual
   exit 0
 fi
