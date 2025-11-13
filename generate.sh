@@ -36,13 +36,6 @@ if [ "$AI_COMMIT_IN_PROGRESS" = "true" ]; then
   exit 0
 fi
 
-# Cek apakah ada file yang di-stage sebelum melakukan apapun
-if ! git diff --cached --quiet; then
-  echo "ℹ️ Tidak ada perubahan di stage (jalankan 'git add' terlebih dahulu)."
-  # Keluar dengan non-zero untuk membatalkan commit
-  exit 1
-fi
-
 AI_SERVER_URL="http://localhost:8000/generate-commit-message"
 REPO_PATH=$(git rev-parse --show-toplevel)
 
